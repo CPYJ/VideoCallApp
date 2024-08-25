@@ -24,6 +24,7 @@ const wsServer = SocketIO(httpServer); // 위 코드와 동일한 기능
 wsServer.on("connection", (socket) => {
     socket.onAny((event)=> console.log(`Socket Event : ${event}`));
 
+    socket["nickname"] = "Anon"; // 닉네임 초기설정
 
     // 클라이언트가 채팅방에 들어왔을 때
     socket.on("enter_room", (roomName, done) => {
@@ -33,19 +34,24 @@ wsServer.on("connection", (socket) => {
         socket.join(roomName.payload);
         done(); // 프론트 함수 실행
         // welcome 메시지를 보내줌
-        socket.to(roomName.payload).emit("welcome");
+        socket.to(roomName.payload).emit("welcome", socket.nickname);
     });
 
     // 클라이언트의 연결이 끊기고 방을 나가기 전일 때
     socket.on("disconnecting", ()=> {
         console.log("disconnecting workd");
-        socket.rooms.forEach((room) => socket.to(room).emit("bye"));
+        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
     });
 
     // 클라이언트가 새로운 메시지를 보냈을 때
     socket.on("new_message", (msg, room, done) => {
-        socket.to(room).emit("new_message", msg);
+        socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
         done();
+    });
+
+    // 클라이언트가 닉네임을 보냈을 때, 소켓에 닉네임 속성 지정
+    socket.on("nickname", (nickname) => {
+        socket["nickname"] = nickname;
     });
 
 
