@@ -23,11 +23,11 @@ function handleMessageSubmit(event) {
 
 
 // 채팅방 보여주고 닉네임 폼 숨기기
-function showRoom() { 
+function showRoom(userCnt) { 
     room.hidden = false;
     welcome.hidden = true;
     const h3 = room.querySelector("h3");
-    h3.innerText = `Room ${roomName}`;
+    h3.innerText = `Room ${roomName} (${userCnt})`;
 
 
     // 하단의 코드는 밖으로 빼도 무방함
@@ -70,16 +70,38 @@ function addMessage(message) {
 
 
 // 서버로부터 받은 이벤트. 누군가 방에 들어왔을 때
-socket.on("welcome", (user)=> { // 백에서 유저정보를 보내줌
+socket.on("welcome", (user, userCnt)=> { // 백에서 유저정보를 보내줌
     // 프론트에 적절한 메시지 출력
     addMessage(`${user} joined!`); 
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${userCnt})`;
 });
 
+
 // 누군가 방을 나갔을 때
-socket.on("bye", (leftUser)=> { 
-    console.log("bye workd : ", leftUser);
+socket.on("bye", (leftUser, userCount)=> { 
     addMessage(`${leftUser} left`);
+
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${userCount})`
 });
+
 
 // 누군가 메시지를 보냈을 때
 socket.on("new_message", (msg) => addMessage(msg));
+
+
+
+// 채팅방 입장 전에 열려있는 채팅방 list를 볼 수 있음
+socket.on("room_change", (rooms)=> {
+    // 매번 += 로 화면에 출력되지 않게 비워줌
+    const roomList = welcome.querySelector("ul");
+    roomList.innerHTML = "";
+
+    // list가 0이면 어차피 forEach문은 실행 안됨
+    rooms.forEach((room) => {
+        const li = document.createElement("li");
+        li.innerText = room;
+        roomList.append(li);
+    });
+});
