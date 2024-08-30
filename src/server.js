@@ -22,6 +22,15 @@ const httpServer = http.createServer(app); // http 서버를 띄움
 const wsServer =new Server(httpServer);
 
 
+wsServer.on("connection", socket => {
+    socket.on("joinRoom", (roomName, done) => {
+        socket.join(roomName);
+        done();
+
+        socket.to(roomName).emit("welcome");
+    })
+});
+
  
 
 const handleListen = () => console.log("listening on port 3020");
