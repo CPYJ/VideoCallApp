@@ -32,7 +32,7 @@ async function getMedia(deviceId) {
         myStream = await navigator.mediaDevices.getUserMedia(
             deviceId ? cameraConstaints : initialConstraints
         );
-        // 카메라 화면 띄우기
+        // 카메라 화면 띄우기. 미디어 스트림 연결
         myFace.srcObject = myStream; 
         // 카메라 목록은 딱 한번만 가져오기 위함
         if(!deviceId) await getCameras(); 
@@ -56,9 +56,11 @@ async function getCameras() {
 
         // 카메라를 option으로 만들어서 select에 넣어줌
         cameras.forEach(camera => {
+
             const option = document.createElement("option");
             option.value = camera.deviceId;
             option.innerText = camera.label;
+
             if(currentCamera.label == camera.label) {
                 option.selected = true;
             }
@@ -101,10 +103,20 @@ function handleCameraClick () {
 
 
 
-// 선택된 카메라의 화면이 나오게끔 함
+// 선택된 카메라의 화면이 나오게끔 + 전송되게끔 함
 async function handleCameraChange() {
     console.log('handleCameraSelect');
     await getMedia(camerasSelect.value);
+
+    // video track을 전송하는 객체 찾기
+    if(myPeerConnection) {
+        const videoTrack = myStream.getVideoTracks()[0];
+        const videoSender = myPeerConnection.getSenders().find(sender => sender.track.kind === "video");
+
+        // 기존 미디어 스트림에서 비디오 트랙만 교체
+        videoSender.replaceTrack(videoTrack);
+    }
+
 }
 
 muteBtn.addEventListener("click", handleMuteClick);
@@ -189,7 +201,7 @@ socket.on("answer", answer => {
 // 상대의 ice candidate을 받음
 socket.on("ice", (ice) => {
     console.log('received candidate');
-    // 상대의 네트워크 경로를 내 p2p 커넥션에 추가
+    // 상대의 네트워크 경로를 내 p2p 커넥션에 추가하여 연결을 시도할 수 있는 경로로 등록
     myPeerConnection.addIceCandidate(ice);
 });
 
@@ -203,10 +215,11 @@ function makeConnection() {
 
     // ice candidate라는 이벤트는 offer와 answer가 오간 후 자동으로 일어남
     myPeerConnection.addEventListener("icecandidate",handleIce);
-    // 상대 피어의 미디어 스트림이 추가될 때 실행됨
+
+    // signaling 후 상대 피어의 미디어 스트림이 추가될 때 실행됨
     myPeerConnection.addEventListener("addstream", handleAddStream);
 
-    // p2p 커넥션에 미디어 스트림을 추가하면 offer, answer 교환 후에 자동으로 상대에게 전송됨
+    // p2p 커넥션에 미디어 스트림을 추가. signaling 후 자동으로 상대에게 전송됨
     myStream.getTracks().forEach(track => myPeerConnection.addTrack(track,myStream));
 }
 
@@ -220,5 +233,6 @@ function handleIce(data) {
 
 // 상대 피어의 미디어 스트림을 받음
 function handleAddStream(data) {
-    console.log('got the stream of peer', data);
+    const peerFace = document.getElementById("peerFace");
+    peerFace.srcObject = data.stream;
 }
