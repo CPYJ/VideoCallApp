@@ -108,9 +108,10 @@ async function handleCameraChange() {
     console.log('handleCameraSelect');
     await getMedia(camerasSelect.value);
 
-    // video track을 전송하는 객체 찾기
+   // p2p 커넥션 중 카메라가 바뀌었을 때 상대편에도 바뀐 화면 전송해주기
     if(myPeerConnection) {
         const videoTrack = myStream.getVideoTracks()[0];
+         // video track을 전송하는 객체 찾기
         const videoSender = myPeerConnection.getSenders().find(sender => sender.track.kind === "video");
 
         // 기존 미디어 스트림에서 비디오 트랙만 교체
@@ -211,13 +212,27 @@ let myPeerConnection;
 
 // P2P 커넥션이 초기화 됨
 function makeConnection() {
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        // Stun Server 목록
+        iceServers: [
+            {
+              urls: [
+                "stun:stun.l.google.com:19302",
+                "stun:stun1.l.google.com:19302",
+                "stun:stun2.l.google.com:19302",
+                "stun:stun3.l.google.com:19302",
+                "stun:stun4.l.google.com:19302",
+              ],
+            },
+          ],
+    });
 
     // ice candidate라는 이벤트는 offer와 answer가 오간 후 자동으로 일어남
     myPeerConnection.addEventListener("icecandidate",handleIce);
 
     // signaling 후 상대 피어의 미디어 스트림이 추가될 때 실행됨
     myPeerConnection.addEventListener("addstream", handleAddStream);
+    //myPeerConnection.addEventListener("track", handleAddStream);
 
     // p2p 커넥션에 미디어 스트림을 추가. signaling 후 자동으로 상대에게 전송됨
     myStream.getTracks().forEach(track => myPeerConnection.addTrack(track,myStream));
@@ -234,5 +249,6 @@ function handleIce(data) {
 // 상대 피어의 미디어 스트림을 받음
 function handleAddStream(data) {
     const peerFace = document.getElementById("peerFace");
+    console.log('data.stream , ', data.stream);
     peerFace.srcObject = data.stream;
 }
