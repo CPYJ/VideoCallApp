@@ -4,7 +4,7 @@
 
 ### **📌** 개발환경
 
-- JavaScript
+- **Language** : JavaScript
 
 - **IDE** : VSCode
 
