@@ -8,7 +8,7 @@
 
 - **IDE** : VSCode
 
-- **FrameWork** : Socket IO
+- **Library** : Socket IO
 
 - **RTC** : WebRTC
 
